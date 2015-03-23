@@ -40,14 +40,16 @@ shipment = EasyPost::Shipment.create(
 unless opts[:buy]
   to_addr = shipping_config['to']
   lowest = shipment.lowest_rate
-  puts "to: #{to_addr['name']} in #{to_addr['city']}, #{to_addr['state']}", "rate: #{lowest[:rate]}", "carrier: #{lowest[:carrier]}"
+  puts "to: #{to_addr['name']} in #{to_addr['city']}, #{to_addr['state']}",
+       "rate: #{lowest[:rate]}",
+       "carrier: #{lowest[:carrier]}"
   exit
 end
 
 shipment.buy(
   rate: shipment.lowest_rate
 )
-shipment.label({'file_format' => 'pdf'})
+shipment.label('file_format' => 'pdf')
 
 puts "Tracking Code:    #{shipment.tracking_code}"
 puts "Shipping Label:   #{shipment.postage_label.label_pdf_url}"
