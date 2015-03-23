@@ -1,0 +1,23 @@
+from:
+  company: PixelYarn
+  name:
+  street1: 101 Example St
+  street2:
+  city: Sample
+  state: XX
+  zip: 12345
+  phone: 555-555-5555
+to:
+  name: Loyal Customer
+  street1: 128 Awesome Rd.
+  street2:
+  city: New York
+  state: Washington
+  zip: 54321
+  country: US
+package:
+  weight: 5
+  length: 10
+  width: 10
+  height: 0.15
+  predefined_package:
