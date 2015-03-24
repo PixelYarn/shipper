@@ -17,8 +17,6 @@ unless opts[:file]
   exit
 end
 
-shipping_config = YAML.load_file(opts[:file])
-
 if opts[:test]
   # Test Key
   EasyPost.api_key = ENV['EASYPOST_TEST_KEY']
@@ -26,6 +24,8 @@ else
   # LIVE KEY!!
   EasyPost.api_key = ENV['EASYPOST_PROD_KEY']
 end
+
+shipping_config = YAML.load_file(opts[:file])
 
 from_address = EasyPost::Address.create(shipping_config['from'])
 to_address = EasyPost::Address.create(shipping_config['to'])
