@@ -25,20 +25,44 @@ else
   EasyPost.api_key = ENV['EASYPOST_PROD_KEY']
 end
 
-shipping_config = YAML.load_file(opts[:file])
+class ShippingConfig
+  attr_reader :from, :to, :package, :customs_info, :customs_items
 
-from_address = EasyPost::Address.create(shipping_config['from'])
-to_address = EasyPost::Address.create(shipping_config['to'])
-parcel = EasyPost::Parcel.create(shipping_config['package'])
+  def initialize(file)
+    @config = YAML.load_file(file)
+    @from = @config['from']
+    @to = @config['to']
+    @package = @config['package']
+    @customs_info = @config['customs_info']
+    @customs_items = @config['customs_items']
+  end
+end
 
+shipping_config = ShippingConfig.new(opts[:file])
+
+from_address = EasyPost::Address.create(shipping_config.from)
+to_address = EasyPost::Address.create(shipping_config.to)
+parcel = EasyPost::Parcel.create(shipping_config.package)
+
+customs_form = unless shipping_config.customs_info.nil?
+                 customs_items = if shipping_config.customs_items
+                                   shipping_config.customs_items.map do |item|
+                                     EasyPost::CustomsItem.create(item)
+                                   end
+                                 end
+                 combined = shipping_config.customs_info
+                 combined[:customs_items] = customs_items
+                 EasyPost::CustomsInfo.create(combined)
+               end
 shipment = EasyPost::Shipment.create(
   to_address: to_address,
   from_address: from_address,
-  parcel: parcel
+  parcel: parcel,
+  customs_info: customs_form
 )
 
 unless opts[:buy]
-  to_addr = shipping_config['to']
+  to_addr = shipping_config.to
   lowest = shipment.lowest_rate
   puts "to: #{to_addr['name']} in #{to_addr['city']}, #{to_addr['state']}",
        "rate: #{lowest[:rate]}",
