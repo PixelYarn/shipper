@@ -25,6 +25,7 @@ else
   EasyPost.api_key = ENV['EASYPOST_PROD_KEY']
 end
 
+# Loads and provides access to the shipping config
 class ShippingConfig
   attr_reader :from, :to, :package, :customs_info, :customs_items
 
@@ -35,6 +36,40 @@ class ShippingConfig
     @package = @config['package']
     @customs_info = @config['customs_info']
     @customs_items = @config['customs_items']
+  end
+end
+
+# Checks the price for a shipment
+class CheckPriceCommand
+  def initialize(config, shipment)
+    @config = config
+    @shipment = shipment
+  end
+
+  def run
+    to_addr = @config.to
+    lowest = @shipment.lowest_rate
+    puts "to: #{to_addr['name']} in #{to_addr['city']}, #{to_addr['state']}",
+         "rate: #{lowest[:rate]}",
+         "carrier: #{lowest[:carrier]}"
+  end
+end
+
+# Purchases Postage for a shipment
+class PurchasePostageCommand
+  def initialize(shipment)
+    @shipment = shipment
+  end
+
+  def run
+    @shipment.buy(
+      rate: @shipment.lowest_rate
+    )
+    @shipment.label('file_format' => 'pdf')
+
+    puts "Tracking Code:    #{@shipment.tracking_code}"
+    puts "Shipping Label:   #{@shipment.postage_label.label_pdf_url}"
+    puts "Shipment ID Code: #{@shipment.id}"
   end
 end
 
@@ -61,20 +96,8 @@ shipment = EasyPost::Shipment.create(
   customs_info: customs_form
 )
 
-unless opts[:buy]
-  to_addr = shipping_config.to
-  lowest = shipment.lowest_rate
-  puts "to: #{to_addr['name']} in #{to_addr['city']}, #{to_addr['state']}",
-       "rate: #{lowest[:rate]}",
-       "carrier: #{lowest[:carrier]}"
-  exit
-end
-
-shipment.buy(
-  rate: shipment.lowest_rate
-)
-shipment.label('file_format' => 'pdf')
-
-puts "Tracking Code:    #{shipment.tracking_code}"
-puts "Shipping Label:   #{shipment.postage_label.label_pdf_url}"
-puts "Shipment ID Code: #{shipment.id}"
+if opts[:buy]
+  PurchasePostageCommand.new(shipment)
+else
+  CheckPriceCommand.new(shipping_config, shipment)
+end.run
