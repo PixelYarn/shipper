@@ -66,9 +66,9 @@ class PurchasePostageCommand
     )
     @shipment.label('file_format' => 'pdf')
 
-    puts "Tracking Code:    #{@shipment.tracking_code}"
-    puts "Shipping Label:   #{@shipment.postage_label.label_pdf_url}"
-    puts "Shipment ID Code: #{@shipment.id}"
+    puts "Tracking Code:    #{@shipment.tracking_code}",
+         "Shipping Label:   #{@shipment.postage_label.label_pdf_url}",
+         "Shipment ID Code: #{@shipment.id}"
   end
 end
 
@@ -82,11 +82,11 @@ class PrintAddressCommand
   def run
     verified = @to_address
 
-    puts verified.name || verified.company
-    puts verified.street1
-    puts verified.street2
-    puts verified.city + ', ' + verified.state + ' ' + verified.zip
-    puts ''
+    puts "#{verified.name || verified.company}",
+         "#{verified.street1}",
+         "#{verified.street2}",
+         "#{verified.city}, #{verified.state} #{verified.zip}",
+         ''
   end
 end
 
