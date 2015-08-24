@@ -49,8 +49,7 @@ class CheckPriceCommand
   def run
     to_addr = @config.to
     lowest = @shipment.lowest_rate
-    puts "to: #{to_addr['name']} in #{to_addr['city']}, #{to_addr['state']}",
-         "rate: #{lowest[:rate]}",
+    puts "rate: #{lowest[:rate]}",
          "carrier: #{lowest[:carrier]}"
   end
 end
@@ -73,10 +72,29 @@ class PurchasePostageCommand
   end
 end
 
+# Verifies and displays the address
+class PrintAddressCommand
+  def initialize(to_address)
+    @to_address = to_address
+  end
+
+  # Print the verified destination
+  def run
+    verified = @to_address
+
+    puts verified.name || verified.company
+    puts verified.street1
+    puts verified.street2
+    puts verified.city + ', ' + verified.state + ' ' + verified.zip
+    puts ''
+  end
+end
+
 shipping_config = ShippingConfig.new(opts[:file])
 
-from_address = EasyPost::Address.create(shipping_config.from)
+from_address = EasyPost::Address.create_and_verify(shipping_config.from)
 to_address = EasyPost::Address.create(shipping_config.to)
+to_address = to_address.verify if to_address.country == 'US'
 parcel = EasyPost::Parcel.create(shipping_config.package)
 
 customs_form = unless shipping_config.customs_info.nil?
@@ -96,6 +114,7 @@ shipment = EasyPost::Shipment.create(
   customs_info: customs_form
 )
 
+PrintAddressCommand.new(to_address).run
 if opts[:buy]
   PurchasePostageCommand.new(shipment)
 else
