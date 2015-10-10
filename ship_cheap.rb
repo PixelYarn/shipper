@@ -27,7 +27,7 @@ end
 
 # Loads and provides access to the shipping config
 class ShippingConfig
-  attr_reader :from, :to, :package, :customs_info, :customs_items
+  attr_reader :from, :to, :package, :customs_info, :customs_items, :insurance
 
   def initialize(file)
     @config = YAML.load_file(file)
@@ -36,6 +36,7 @@ class ShippingConfig
     @package = @config['package']
     @customs_info = @config['customs_info']
     @customs_items = @config['customs_items']
+    @insurance = @config['insurance']
   end
 end
 
@@ -50,22 +51,25 @@ class CheckPriceCommand
     to_addr = @config.to
     lowest = @shipment.lowest_rate
     puts "rate: #{lowest[:rate]}",
-         "carrier: #{lowest[:carrier]}"
+         "carrier: #{lowest[:carrier]}",
+         "insurance value (costs 1% of value insured): #{@config.insurance}"
   end
 end
 
 # Purchases Postage for a shipment
 class PurchasePostageCommand
-  def initialize(shipment)
+  def initialize(shipment, insurance_amount)
     @shipment = shipment
+    @insurance_amount = insurance_amount
   end
 
   def run
     @shipment.buy(
       rate: @shipment.lowest_rate
     )
-    @shipment.label('file_format' => 'pdf')
+    p @shipment.insure(amount: @insurance_amount) if @insurance_amount > 0
 
+    @shipment.label('file_format' => 'pdf')
     puts "Tracking Code:    #{@shipment.tracking_code}",
          "Shipping Label:   #{@shipment.postage_label.label_pdf_url}",
          "Shipment ID Code: #{@shipment.id}"
@@ -96,6 +100,7 @@ from_address = EasyPost::Address.create_and_verify(shipping_config.from)
 to_address = EasyPost::Address.create(shipping_config.to)
 to_address = to_address.verify if to_address.country == 'US'
 parcel = EasyPost::Parcel.create(shipping_config.package)
+insurance_amount = shipping_config.insurance
 
 customs_form = unless shipping_config.customs_info.nil?
                  customs_items = if shipping_config.customs_items
@@ -116,7 +121,7 @@ shipment = EasyPost::Shipment.create(
 
 PrintAddressCommand.new(to_address).run
 if opts[:buy]
-  PurchasePostageCommand.new(shipment)
+  PurchasePostageCommand.new(shipment, insurance_amount)
 else
   CheckPriceCommand.new(shipping_config, shipment)
 end.run
