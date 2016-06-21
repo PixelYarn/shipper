@@ -2,6 +2,7 @@
 require 'easypost'
 require 'yaml'
 require 'slop'
+require 'toml'
 
 require 'dotenv'
 Dotenv.load
@@ -10,6 +11,7 @@ opts = Slop.parse do |o|
   o.string '-f', '--file', 'a postage config file'
   o.bool '--buy', 'Actually buy the label'
   o.bool '--test', 'Use the testing environment'
+  o.string '--service', 'the postal service level to use'
 end
 
 unless opts[:file]
@@ -31,6 +33,9 @@ class ShippingConfig
 
   def initialize(file)
     @config = YAML.load_file(file)
+    File.open(file + '.toml', 'w') do |f|
+      f.write(TOML.dump(@config))
+    end
     @from = @config['from']
     @to = @config['to']
     @package = @config['package']
@@ -42,32 +47,34 @@ end
 
 # Checks the price for a shipment
 class CheckPriceCommand
-  def initialize(config, shipment)
+  def initialize(config, shipment, rate)
     @config = config
     @shipment = shipment
+    @rate = rate
   end
 
   def run
     to_addr = @config.to
-    lowest = @shipment.lowest_rate
-    puts "rate: #{lowest[:rate]}",
-         "carrier: #{lowest[:carrier]}",
+
+    puts "rate: #{@rate[:rate]}",
+         "carrier: #{@rate[:carrier]}",
          "insurance value (costs 1% of value insured): #{@config.insurance}"
   end
 end
 
 # Purchases Postage for a shipment
 class PurchasePostageCommand
-  def initialize(shipment, insurance_amount)
+  def initialize(shipment, insurance_amount, rate)
     @shipment = shipment
     @insurance_amount = insurance_amount
+    @rate = rate
   end
 
   def run
     @shipment.buy(
-      rate: @shipment.lowest_rate
+      rate: @rate
     )
-    p @shipment.insure(amount: @insurance_amount) if @insurance_amount > 0
+    @shipment.insure(amount: @insurance_amount) if @insurance_amount > 0
 
     @shipment.label('file_format' => 'pdf')
     puts "Tracking Code:    #{@shipment.tracking_code}",
@@ -119,9 +126,16 @@ shipment = EasyPost::Shipment.create(
   customs_info: customs_form
 )
 
+selected_rate = if opts['service']
+                  shipment.rates.select { |r| r.service == opts['service'] }.first
+                else
+                  shipment.lowest_rate
+                end
+fail unless selected_rate
+
 PrintAddressCommand.new(to_address).run
 if opts[:buy]
-  PurchasePostageCommand.new(shipment, insurance_amount)
+  PurchasePostageCommand.new(shipment, insurance_amount, selected_rate)
 else
-  CheckPriceCommand.new(shipping_config, shipment)
+  CheckPriceCommand.new(shipping_config, shipment, selected_rate)
 end.run
