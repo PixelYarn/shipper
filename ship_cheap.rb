@@ -66,7 +66,7 @@ end
 class PurchasePostageCommand
   def initialize(shipment, insurance_amount, rate)
     @shipment = shipment
-    @insurance_amount = insurance_amount
+    @insurance_amount = insurance_amount || 0
     @rate = rate
   end
 
