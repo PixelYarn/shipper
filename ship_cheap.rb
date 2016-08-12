@@ -58,7 +58,7 @@ class CheckPriceCommand
     to_addr = @config.to
 
     puts "rate: #{@rate[:rate]}",
-         "carrier: #{@rate[:carrier]}",
+         "carrier: #{@rate[:carrier]}, #{@rate[:service]}",
          "insurance value (costs 1% of value insured): #{@config.insurance}"
   end
 end
