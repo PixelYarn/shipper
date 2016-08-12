@@ -12,7 +12,7 @@ opts = Slop.parse do |o|
   o.bool '--buy', 'Actually buy the label'
   o.bool '--test', 'Use the testing environment'
   o.string '--service', 'the postal service level to use'
-  o.int '--max-days', 'the maximum allowed days to deliver (with guarantee)'
+  o.int '--max-days', 'the maximum allowed days to deliver'
 end
 
 unless opts[:file]
@@ -131,7 +131,7 @@ selected_rate = if opts['service'] || opts['max-days']
                   rate_options = shipment.rates
 
                   rate_options = rate_options.select { |r| r.service == opts['service'] } if opts['service']
-                  rate_options = rate_options.select { |r| r.delivery_date_guaranteed && r.delivery_days <= opts['max-days'] } if opts['max-days']
+                  rate_options = rate_options.select { |r| r.delivery_days <= opts['max-days'] } if opts['max-days']
 
                   rate_options.min_by { |r| r.rate.to_f }
                 else
