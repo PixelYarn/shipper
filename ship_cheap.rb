@@ -2,7 +2,7 @@
 require 'easypost'
 require 'yaml'
 require 'slop'
-require 'toml'
+require 'toml-rb'
 
 require 'dotenv'
 Dotenv.load
@@ -35,7 +35,7 @@ class ShippingConfig
   def initialize(file)
     @config = YAML.load_file(file)
     File.open(file + '.toml', 'w') do |f|
-      f.write(TOML.dump(@config))
+      f.write(TomlRB.dump(@config))
     end
     @from = @config['from']
     @to = @config['to']
