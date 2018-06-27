@@ -104,9 +104,8 @@ end
 
 shipping_config = ShippingConfig.new(opts[:file])
 
-from_address = EasyPost::Address.create_and_verify(shipping_config.from)
+from_address = EasyPost::Address.create(shipping_config.from)
 to_address = EasyPost::Address.create(shipping_config.to)
-to_address = to_address.verify if to_address.country == 'US'
 parcel = EasyPost::Parcel.create(shipping_config.package)
 insurance_amount = shipping_config.insurance
 
